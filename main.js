@@ -1,13 +1,13 @@
-
-document.addEventListener('keydown', (event) => {
+document.addEventListener("keydown", (event) => {
   if (event.key == "r" && event.ctrlKey) {
     main();
   }
 });
 
 async function main() {
-  const shaderText = await fetch('./raymarch.wgsl')
-    .then(result => result.text());
+  const shaderText = await fetch("./raymarch.wgsl").then((result) =>
+    result.text(),
+  );
 
   // Getting the canvas & setting the resolution
   let canvas = document.querySelector("canvas");
@@ -20,14 +20,14 @@ async function main() {
 
   // download canvas
   function saveCanvas(e) {
-    const link = document.createElement('a');
-    link.download = 'shader.png';
+    const link = document.createElement("a");
+    link.download = "shader.png";
     link.href = canvas.toDataURL();
     link.click();
     link.delete;
   }
   // document.getElementById("download").addEventListener("click", saveCanvas);
-  document.addEventListener('keydown', (event) => {
+  document.addEventListener("keydown", (event) => {
     if (event.key == "s" && event.ctrlKey) {
       saveCanvas();
       event.preventDefault();
@@ -46,15 +46,19 @@ async function main() {
   function updateMouse(e) {
     let domain = canvas.getBoundingClientRect();
     if (mousePressed) {
-      MOUSE_X = (e.clientX - domain.left) - X_RES / 2;
-      MOUSE_Y = (e.clientY - domain.top) - Y_RES / 2;
-      console.log("MOUSE:", MOUSE_X / X_RES, MOUSE_Y / Y_RES)
+      MOUSE_X = e.clientX - domain.left - X_RES / 2;
+      MOUSE_Y = e.clientY - domain.top - Y_RES / 2;
+      console.log("MOUSE:", MOUSE_X / X_RES, MOUSE_Y / Y_RES);
     }
   }
 
   canvas.addEventListener("mousemove", updateMouse);
-  canvas.addEventListener("mousedown", (event) => { mousePressed = true });
-  canvas.addEventListener("mouseup", (event) => { mousePressed = false });
+  canvas.addEventListener("mousedown", (event) => {
+    mousePressed = true;
+  });
+  canvas.addEventListener("mouseup", (event) => {
+    mousePressed = false;
+  });
 
   // Setting up the GPU Pipeline
   // Checking to make sure browser supports WebGPU
@@ -83,13 +87,19 @@ async function main() {
   const HALF_WIDTH = 1.0;
   const vertices = new Float32Array([
     //   X,    Y,
-    -HALF_WIDTH, -HALF_WIDTH, // Triangle 1 (Blue)
-    HALF_WIDTH, -HALF_WIDTH,
-    HALF_WIDTH, HALF_WIDTH,
+    -HALF_WIDTH,
+    -HALF_WIDTH, // Triangle 1 (Blue)
+    HALF_WIDTH,
+    -HALF_WIDTH,
+    HALF_WIDTH,
+    HALF_WIDTH,
 
-    -HALF_WIDTH, -HALF_WIDTH, // Triangle 2 (Red)
-    HALF_WIDTH, HALF_WIDTH,
-    -HALF_WIDTH, HALF_WIDTH,
+    -HALF_WIDTH,
+    -HALF_WIDTH, // Triangle 2 (Red)
+    HALF_WIDTH,
+    HALF_WIDTH,
+    -HALF_WIDTH,
+    HALF_WIDTH,
   ]);
 
   // Creating the buffer
@@ -102,11 +112,13 @@ async function main() {
   // Defining the vertex data structure
   const vertexBufferLayout = {
     arrayStride: 8,
-    attributes: [{
-      format: "float32x2",
-      offset: 0,
-      shaderLocation: 0, // Position, see vertex shader
-    }],
+    attributes: [
+      {
+        format: "float32x2",
+        offset: 0,
+        shaderLocation: 0, // Position, see vertex shader
+      },
+    ],
   };
 
   // Create a uniform buffer that describes the grid.
@@ -135,24 +147,34 @@ async function main() {
 
   // Creating the shaders (they get passed in as strings)
   const cellShaderModule = device.createShaderModule({
-    label: 'Cell shader',
-    code: shaderText
+    label: "Cell shader",
+    code: shaderText,
   });
-
 
   const bindGroupLayout = device.createBindGroupLayout({
     entries: [
-      { binding: 0, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 1, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-      { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-    ]
-  })
-
+      {
+        binding: 0,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: { type: "uniform" },
+      },
+      {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: { type: "uniform" },
+      },
+      {
+        binding: 2,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: { type: "uniform" },
+      },
+    ],
+  });
 
   const pipelineLayout = device.createPipelineLayout({
     bindGroupLayouts: [
       bindGroupLayout, // @group(0)
-    ]
+    ],
   });
 
   // Creating the render pipeline (conttrols how geometry is drawn, which shaders are used, etc.)
@@ -162,15 +184,17 @@ async function main() {
     vertex: {
       module: cellShaderModule,
       entryPoint: "vertexMain",
-      buffers: [vertexBufferLayout]
+      buffers: [vertexBufferLayout],
     },
     fragment: {
       module: cellShaderModule,
       entryPoint: "fragmentMain",
-      targets: [{
-        format: canvasFormat
-      }]
-    }
+      targets: [
+        {
+          format: canvasFormat,
+        },
+      ],
+    },
   });
 
   const bindGroup = device.createBindGroup({
@@ -198,23 +222,23 @@ async function main() {
       mouseUniformArray[1] = MOUSE_Y;
 
       // Copying the vertices into the buffer's memory
-      device.queue.writeBuffer(vertexBuffer, /*bufferOffset=*/0, vertices);
+      device.queue.writeBuffer(vertexBuffer, /*bufferOffset=*/ 0, vertices);
       device.queue.writeBuffer(rezBuffer, 0, rezUniformArray);
       device.queue.writeBuffer(timeBuffer, 0, timeUniformArray);
       device.queue.writeBuffer(mouseBuffer, 0, mouseUniformArray);
-
-
 
       // Provides an interface for recording GPU commands
       const encoder = device.createCommandEncoder();
 
       const pass = encoder.beginRenderPass({
-        colorAttachments: [{
-          view: context.getCurrentTexture().createView(),
-          loadOp: "clear",
-          clearValue: { r: 0, g: 0, b: 0.4, a: 1 }, // New line
-          storeOp: "store",
-        }]
+        colorAttachments: [
+          {
+            view: context.getCurrentTexture().createView(),
+            loadOp: "clear",
+            clearValue: { r: 0, g: 0, b: 0.4, a: 1 }, // New line
+            storeOp: "store",
+          },
+        ],
       });
 
       pass.setPipeline(cellPipeline);
@@ -225,11 +249,11 @@ async function main() {
       pass.draw(vertices.length / 2); // 6 vertices
 
       // Ending the render pass
-      pass.end()
+      pass.end();
 
       // Finish the command buffer and immediately submit it.
       device.queue.submit([encoder.finish()]);
-    }
+    };
     run();
     // let time = performance.now();
     // let timeDelta = time - lastTime;
@@ -237,7 +261,7 @@ async function main() {
     // fps.innerText = Math.round(timeDelta);
     requestAnimationFrame(draw);
     // setTimeout(draw, 100.0);
-  }
+  };
   draw();
 }
-main() 
+main();
