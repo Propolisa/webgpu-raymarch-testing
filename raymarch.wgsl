@@ -420,7 +420,7 @@ const lightColors = array<vec3f, numLights>(
     vec3f(1.0),
 );
 
-const MAX_SPEED: f32 = 0.02; // Maximum speed of the camera
+const MAX_SPEED: f32 = 0.00012; // Maximum speed of the camera
 
 struct CameraState {
     position: vec3f,
@@ -439,24 +439,19 @@ fn moveCamera(ro: vec3f, rd: vec3f, time: f32) -> CameraState {
     let dirChange = randomDirectionChange(time);
     let newDir = normalize(rd + dirChange); // Ensure the direction remains normalized
     let newPos = ro + newDir * MAX_SPEED; // Move the camera along the new direction at a constant speed
-    return CameraState(newPos, newDir);
+    return CameraState(ro, rd);
 }
 
 @fragment
 fn fragmentMain(@builtin(position) pos: vec4<f32>) -> @location(0) vec4f {
-    let uv = (vec2(pos.x, pos.y) / rez - 0.5) * 2.0;
-    let initialRo = vec3f(0.0, 0.0, 5.0); // Initial camera position inside the cave
-    let initialRd = vec3f(0.0, 0.0, -1.0); // Initial camera view direction (looking forward)
+    // Setting up uv coordinates
+    let uv = (vec2(pos.x, pos.y) / rez - 0.5) * 2.0; // normalizing
 
-    // Animate the camera with random movement and view direction changes
-    let cp = moveCamera(initialRo, initialRd, time);
-    let ro = cp.position;
-    let rd = cp.direction;
-
-    // Perform ray marching with the updated camera position and direction
-    let rayDir = rayDirection(uv, ro, ro + rd); // Target is the new camera direction
-    let d = rayMarch(ro, rayDir);
-
+    // Ray Marching
+    let rt = vec3f(0., 0., 0.);
+    var ro = vec3f(0., 0., -5.0);
+    let rd = rayDirection(uv, ro, rt);
+    let d = rayMarch(ro, rd);
 
     // Background
     var v = length(uv) * .75;
